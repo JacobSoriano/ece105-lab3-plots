@@ -11,6 +11,7 @@ Usage
 # Create a function generate_data(seed) that returns sensor_a, sensor_b,
 # and timestamps arrays with the same parameters as in the notebook.
 # Use NumPy-style docstring with Parameters and Returns sections.
+
 from matplotlib.pylab import seed
 
 
@@ -285,6 +286,18 @@ def main(seed=0, out_dir=None):
     plt.close(fig)
 
     print(f"Saved: {scatter_path}, {hist_path}, {box_path}")
+
+    # composite 1x3 figure
+    fig, axs = plt.subplots(1, 3, figsize=(15, 4.5))
+    plot_scatter(axs[0], sensor_a, sensor_b)
+    plot_histogram(axs[1], sensor_a, sensor_b)
+    plot_boxplot(axs[2], sensor_a, sensor_b)
+    for a in axs:
+        a.label_outer()
+    composite_path = out_dir / 'sensor_analysis.png'
+    fig.savefig(composite_path, dpi=150, bbox_inches='tight')
+    plt.close(fig)
+    print(f"Saved composite: {composite_path}")
 
 
 if __name__ == '__main__':
