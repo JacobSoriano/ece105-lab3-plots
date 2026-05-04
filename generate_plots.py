@@ -180,3 +180,56 @@ def plot_histogram(ax, sensor_a, sensor_b, bins=30, alpha=0.6, label_a='Sensor A
     ax.legend()
     ax.grid(axis='y', alpha=0.3)
     return None
+
+# Create plot_boxplot(sensor_a, sensor_b, timestamps, ax) that draws
+# the box plot from the notebook onto the given Axes object.
+# NumPy-style docstring. Modifies ax in place, returns None.
+
+def plot_boxplot(ax, sensor_a, sensor_b, labels=('Sensor A','Sensor B'), box_kwargs=None, show_points=True):
+    """Plot box plots for two sensors on an Axes,
+    in-place.
+
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        Matplotlib Axes to draw on (modified in-place).
+    sensor_a : ndarray
+        1-D array of readings from sensor A (may contain NaNs).
+    sensor_b : ndarray
+        1-D array of readings from sensor B (may contain NaNs).
+    labels : sequence of str, optional
+        Labels for the two boxes; default ("Sensor A","Sensor B").
+    box_kwargs : dict or None, optional
+        Additional keyword arguments forwarded to Axes.boxplot.
+    show_points : bool, optional
+        If True, draw jittered individual data points over the boxes.
+   
+    Returns
+    -------
+    None
+        Modifies ax in-place and returns None.
+    """
+    import numpy as _np
+   
+    kwargs = {} if box_kwargs is None else dict(box_kwargs)
+   
+    a = _np.asarray(sensor_a)
+    b = _np.asarray(sensor_b)
+    a_clean = a[_np.isfinite(a)]
+    b_clean = b[_np.isfinite(b)]
+   
+    data = [a_clean, b_clean]
+    bp = ax.boxplot(data, labels=labels, patch_artist=True, 
+    boxprops=dict(facecolor='lightgray', color='k'), **kwargs)
+   
+    if show_points:
+        # jitter points for visibility
+        xa = _np.random.normal(1, 0.06, size=a_clean.size)
+        xb = _np.random.normal(2, 0.06, size=b_clean.size)
+        ax.scatter(xa, a_clean, alpha=0.6, color='tab:blue', s=10)
+        ax.scatter(xb, b_clean, alpha=0.6, color='tab:orange', s=10)
+   
+    ax.set_ylabel('Temperature (°C)')
+    ax.set_title(f'Box plot of {labels[0]} and {labels[1]}')
+    ax.grid(axis='y', alpha=0.3)
+    return None
