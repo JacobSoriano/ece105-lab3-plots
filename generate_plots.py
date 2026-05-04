@@ -253,10 +253,11 @@ def main(seed=0, out_dir=None):
     -------
     None
         Saves three PNG files: sensor_scatter.png, sensor_hist.png, sensor_box.png
-        in the output directory.
+        and a composite sensor_analysis.png in the output directory.
     """
     import matplotlib.pyplot as plt
     from pathlib import Path
+    import numpy as _np
 
     out_dir = Path(out_dir) if out_dir is not None else Path('.')
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -264,21 +265,19 @@ def main(seed=0, out_dir=None):
     # Generate data
     sensor_a, sensor_b, timestamps = generate_data(seed)
 
-    # Scatter
+    # Save individual figures as before
     fig, ax = plt.subplots(figsize=(6,5))
     plot_scatter(ax, sensor_a, sensor_b)
     scatter_path = out_dir / 'sensor_scatter.png'
     fig.savefig(scatter_path, dpi=150, bbox_inches='tight')
     plt.close(fig)
 
-    # Histogram
     fig, ax = plt.subplots(figsize=(7,4))
     plot_histogram(ax, sensor_a, sensor_b)
     hist_path = out_dir / 'sensor_hist.png'
     fig.savefig(hist_path, dpi=150, bbox_inches='tight')
     plt.close(fig)
 
-    # Box plot
     fig, ax = plt.subplots(figsize=(7,5))
     plot_boxplot(ax, sensor_a, sensor_b)
     box_path = out_dir / 'sensor_box.png'
@@ -287,13 +286,38 @@ def main(seed=0, out_dir=None):
 
     print(f"Saved: {scatter_path}, {hist_path}, {box_path}")
 
-    # composite 1x3 figure
-    fig, axs = plt.subplots(1, 3, figsize=(15, 4.5))
-    plot_scatter(axs[0], sensor_a, sensor_b)
-    plot_histogram(axs[1], sensor_a, sensor_b)
-    plot_boxplot(axs[2], sensor_a, sensor_b)
-    for a in axs:
+    # Composite 2x2 grid (last cell shows summary statistics)
+    fig, axs = plt.subplots(2, 2, figsize=(12, 9))
+    axs_flat = axs.ravel()
+
+    # populate plots
+    plot_scatter(axs_flat[0], sensor_a, sensor_b)
+    plot_histogram(axs_flat[1], sensor_a, sensor_b)
+    plot_boxplot(axs_flat[2], sensor_a, sensor_b)
+
+    # summary statistics in the bottom-right cell
+    a = _np.asarray(sensor_a)
+    b = _np.asarray(sensor_b)
+    stats = []
+    for name, arr in (('Sensor A', a), ('Sensor B', b)):
+        clean = arr[_np.isfinite(arr)]
+        stats.append((name, int(clean.size), int(_np.isnan(arr).sum()),
+                      float(clean.min()) if clean.size else _np.nan,
+                      float(clean.max()) if clean.size else _np.nan,
+                      float(clean.mean()) if clean.size else _np.nan,
+                      float(clean.std()) if clean.size else _np.nan))
+
+    stats_lines = [f"{n}: n={ncount}, n_nan={nnan}, min={mn:.3f}, max={mx:.3f}, mean={mu:.3f}, std={sd:.3f}" 
+                   for (n, ncount, nnan, mn, mx, mu, sd) in stats]
+    stats_text = "\n".join(stats_lines)
+
+    ax_summary = axs_flat[3]
+    ax_summary.axis('off')
+    ax_summary.text(0.01, 0.98, "Summary statistics:\n" + stats_text, va='top', ha='left', family='monospace')
+
+    for a in axs_flat[:3]:
         a.label_outer()
+
     composite_path = out_dir / 'sensor_analysis.png'
     fig.savefig(composite_path, dpi=150, bbox_inches='tight')
     plt.close(fig)
