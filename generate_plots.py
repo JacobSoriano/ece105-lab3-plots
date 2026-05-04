@@ -122,3 +122,61 @@ def plot_scatter(ax, sensor_a, sensor_b, label_a='Sensor A', label_b='Sensor B',
     ax.grid(alpha=0.3)
     # do not return Axes (in-place)
     return None
+
+# Create plot_histogram(sensor_a, sensor_b, timestamps, ax) that draws
+# the histogram plot from the notebook onto the given Axes object.
+# NumPy-style docstring. Modifies ax in place, returns None.
+
+def plot_histogram(ax, sensor_a, sensor_b, bins=30, alpha=0.6, label_a='Sensor A', label_b='Sensor B', hist_kwargs=None, show_means=True):
+    """Plot overlaid histograms of sensor_a and sensor_b on an Axes in-place.
+
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        Matplotlib Axes to draw on (modified in-place).
+    sensor_a : ndarray
+        1-D array of readings from sensor A (may contain NaNs).
+    sensor_b : ndarray
+        1-D array of readings from sensor B (may contain NaNs).
+    bins : int or sequence, optional
+        Number of histogram bins or bin edges. Default is 30.
+    alpha : float, optional
+        Transparency for the histogram bars. Default 0.6.
+    label_a, label_b : str, optional
+        Labels for the two sensors used in the legend.
+    hist_kwargs : dict or None, optional
+        Additional keyword arguments forwarded to Axes.hist for both plots.
+    show_means : bool, optional
+        If True, draw dashed vertical lines at each sensor's mean.
+
+    Returns
+    -------
+    None
+        The function modifies the provided Axes in-place and returns None.
+    """
+    import numpy as _np
+
+    kwargs = {} if hist_kwargs is None else dict(hist_kwargs)
+
+    # Mask NaNs
+    a = _np.asarray(sensor_a)
+    b = _np.asarray(sensor_b)
+    a_clean = a[_np.isfinite(a)]
+    b_clean = b[_np.isfinite(b)]
+
+    # Plot histograms (overlaid)
+    ax.hist(a_clean, bins=bins, alpha=alpha, label=label_a, **kwargs)
+    ax.hist(b_clean, bins=bins, alpha=alpha, label=label_b, **kwargs)
+
+    # Mean lines
+    if show_means and a_clean.size > 0:
+        ax.axvline(a_clean.mean(), color='tab:blue', linestyle='--', linewidth=1)
+    if show_means and b_clean.size > 0:
+        ax.axvline(b_clean.mean(), color='tab:orange', linestyle='--', linewidth=1)
+
+    ax.set_xlabel('Temperature (°C)')
+    ax.set_ylabel('Count')
+    ax.set_title(f'Histogram: {label_a} and {label_b}')
+    ax.legend()
+    ax.grid(axis='y', alpha=0.3)
+    return None
