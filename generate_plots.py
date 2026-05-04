@@ -233,3 +233,59 @@ def plot_boxplot(ax, sensor_a, sensor_b, labels=('Sensor A','Sensor B'), box_kwa
     ax.set_title(f'Box plot of {labels[0]} and {labels[1]}')
     ax.grid(axis='y', alpha=0.3)
     return None
+
+# Create main() that generates data, creates a 1x3 subplot figure,
+# calls each plot function, adjusts layout, and saves as sensor_analysis.png
+# at 150 DPI with tight bounding box.
+def main(seed=0, out_dir=None):
+    """Generate data and create/save scatter, histogram, and boxplot figures.
+
+    Parameters
+    ----------
+    seed : int, optional
+        Random seed used to generate synthetic data. Default is 0.
+    out_dir : str or pathlib.Path, optional
+        Directory to write output PNG files. If None, uses the current
+        working directory.
+
+    Returns
+    -------
+    None
+        Saves three PNG files: sensor_scatter.png, sensor_hist.png, sensor_box.png
+        in the output directory.
+    """
+    import matplotlib.pyplot as plt
+    from pathlib import Path
+
+    out_dir = Path(out_dir) if out_dir is not None else Path('.')
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    # Generate data
+    sensor_a, sensor_b, timestamps = generate_data(seed)
+
+    # Scatter
+    fig, ax = plt.subplots(figsize=(6,5))
+    plot_scatter(ax, sensor_a, sensor_b)
+    scatter_path = out_dir / 'sensor_scatter.png'
+    fig.savefig(scatter_path, dpi=150, bbox_inches='tight')
+    plt.close(fig)
+
+    # Histogram
+    fig, ax = plt.subplots(figsize=(7,4))
+    plot_histogram(ax, sensor_a, sensor_b)
+    hist_path = out_dir / 'sensor_hist.png'
+    fig.savefig(hist_path, dpi=150, bbox_inches='tight')
+    plt.close(fig)
+
+    # Box plot
+    fig, ax = plt.subplots(figsize=(7,5))
+    plot_boxplot(ax, sensor_a, sensor_b)
+    box_path = out_dir / 'sensor_box.png'
+    fig.savefig(box_path, dpi=150, bbox_inches='tight')
+    plt.close(fig)
+
+    print(f"Saved: {scatter_path}, {hist_path}, {box_path}")
+
+
+if __name__ == '__main__':
+    main()
