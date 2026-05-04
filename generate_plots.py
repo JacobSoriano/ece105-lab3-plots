@@ -1,20 +1,27 @@
-"""generate_plots module
+"""Generate publication-quality sensor data visualizations.
 
-Contains utility to generate synthetic sensor data matching the notebook's
-parameters.
+This script creates synthetic temperature sensor data using NumPy
+and produces scatter, histogram, and box plot visualizations saved
+as PNG files.
+
+Usage
+-----
+    python generate_plots.py
 """
-
-import numpy as np
+# Create a function generate_data(seed) that returns sensor_a, sensor_b,
+# and timestamps arrays with the same parameters as in the notebook.
+# Use NumPy-style docstring with Parameters and Returns sections.
+from matplotlib.pylab import seed
 
 
 def generate_data(seed):
     """Generate synthetic temperature sensor data.
-
+    
     Parameters
     ----------
     seed : int
         Random seed for reproducible noise and dropouts.
-
+    
     Returns
     -------
     sensor_a : ndarray, shape (n_samples,)
@@ -23,7 +30,7 @@ def generate_data(seed):
         Temperature readings from sensor B (float64). May contain NaNs for simulated dropouts.
     timestamps : ndarray, shape (n_samples,)
         Time stamps in seconds (float64) from 0 to duration-1.
-
+    
     Notes
     -----
     This function reproduces the notebook behavior: 1 Hz sampling for one hour
@@ -31,6 +38,7 @@ def generate_data(seed):
     a small bias on sensor_b, random sparse dropouts (~2%), and one contiguous
     gap of 60 samples. Returned arrays use dtype float64.
     """
+    import numpy as np
     rng = np.random.default_rng(seed)
     fs = 1  # Hz
     duration_s = 3600  # one hour
@@ -38,30 +46,79 @@ def generate_data(seed):
     temp_base = 22.0
     # 30-minute sinusoid
     temp = temp_base + 0.6 * np.sin(2 * np.pi * t / 1800.0)
-
+   
     noise_std = 0.5
     bias = 0.2
-
+   
     # sensor signals
     sensor_a = temp + rng.normal(0.0, noise_std, size=t.shape)
     sensor_b = temp + rng.normal(0.0, noise_std, size=t.shape) + bias
-
+   
     # random sparse dropouts (~2%)
     drop_prob = 0.02
     drop_mask = rng.random(t.shape) < float(drop_prob)
     sensor_a[drop_mask] = np.nan
     sensor_b[drop_mask] = np.nan
-
+   
     # one contiguous gap of 60 samples
     gap_length = 60
     if gap_length > 0 and len(t) > gap_length:
         start = int(rng.integers(0, max(1, len(t) - gap_length)))
         sensor_a[start:start+gap_length] = np.nan
         sensor_b[start:start+gap_length] = np.nan
-
+   
     return sensor_a.astype(np.float64), sensor_b.astype(np.float64), t.astype(np.float64)
 
+# Create plot_scatter(sensor_a, sensor_b, timestamps, ax) that draws
+# the scatter plot from the notebook onto the given Axes object.
+# NumPy-style docstring. Modifies ax in place, returns None.
+def plot_scatter(ax, sensor_a, sensor_b, label_a='Sensor A', label_b='Sensor B', scatter_kwargs=None, identity=True):  
+    """Plot Sensor A vs Sensor B on an existing Axes
+    in-place.
 
-if __name__ == '__main__':
-    a, b, ts = generate_data(0)
-    print('Generated', a.shape, b.shape, ts.shape)
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        An existing Matplotlib Axes object to draw on (modified in-place).
+    sensor_a : ndarray
+        1-D array of readings from sensor A (float-like). May contain NaNs.
+    sensor_b : ndarray
+        1-D array of readings from sensor B (float-like). May contain NaNs.
+    label_a : str, optional
+        Label for sensor A (used in legend). Default 'Sensor A'.
+    label_b : str, optional
+        Label for sensor B (used in legend). Default 'Sensor B'.
+    scatter_kwargs : dict or None, optional
+        Additional keyword arguments forwarded to Axes.scatter. Default None.
+    identity : bool, optional
+        If True, draw a dashed identity line (y=x) to aid comparison. Default True.
+   
+    Returns
+    -------
+    None
+    The function modifies the provided Axes in-place and returns None.
+    """
+    import numpy as _np
+   
+    # Prepare plotting kwargs
+    kwargs = {} if scatter_kwargs is None else dict(scatter_kwargs)
+    # Mask out samples where either sensor is NaN
+    mask = _np.isfinite(sensor_a) & _np.isfinite(sensor_b)
+    xa = _np.asarray(sensor_a)[mask]
+    xb = _np.asarray(sensor_b)[mask]
+   
+    # Scatter
+    ax.scatter(xa, xb, alpha=0.6, s=18, label=f"{label_a} vs {label_b}", **kwargs)
+   
+    # Identity line
+    if identity and xa.size > 0 and xb.size > 0:
+        vmin = min(xa.min(), xb.min())
+        vmax = max(xa.max(), xb.max())
+        ax.plot([vmin, vmax], [vmin, vmax], color='gray', linestyle='--', linewidth=1)
+   
+    ax.set_xlabel(f"{label_a} (°C)")
+    ax.set_ylabel(f"{label_b} (°C)")
+    ax.set_title(f"{label_a} vs {label_b} (scatter)")
+    ax.grid(alpha=0.3)
+    # do not return Axes (in-place)
+    return None
